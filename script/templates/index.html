@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Classifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #336699;
+            text-align: center;
+        }
+        .container {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            height: 150px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            font-family: Arial, sans-serif;
+        }
+        button {
+            background-color: #336699;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #254e77;
+        }
+        .result-container {
+            display: none;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .emotion-result {
+            font-size: 24px;
+            font-weight: bold;
+            color: #336699;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        .progress-container {
+            margin-bottom: 10px;
+        }
+        .emotion-label {
+            display: inline-block;
+            width: 80px;
+            text-align: right;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .progress-bar {
+            height: 25px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            position: relative;
+            width: calc(100% - 100px);
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            background-color: #336699;
+            text-align: right;
+            color: white;
+            line-height: 25px;
+            padding-right: 10px;
+            box-sizing: border-box;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #336699;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Emotion Classification Tool</h1>
+    
+    <div class="container">
+        <h2>Enter text to analyze:</h2>
+        <textarea id="textInput" placeholder="Type or paste a paragraph to classify the emotion..."></textarea>
+        <button id="analyzeBtn">Analyze Emotion</button>
+        <div class="loader" id="loader"></div>
+    </div>
+    
+    <div class="result-container" id="resultContainer">
+        <div class="emotion-result" id="emotionResult"></div>
+        <h3>Confidence Scores:</h3>
+        <div id="probabilitiesResult"></div>
+    </div>
+    
+    <script>
+        document.getElementById('analyzeBtn').addEventListener('click', function() {
+            const text = document.getElementById('textInput').value.trim();
+            
+            if (!text) {
+                alert('Please enter some text to analyze.');
+                return;
+            }
+            
+            // Show loader
+            document.getElementById('loader').style.display = 'block';
+            
+            // Hide results
+            document.getElementById('resultContainer').style.display = 'none';
+            
+            // Send the text to the server for analysis
+            const formData = new FormData();
+            formData.append('text', text);
+            
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loader
+                document.getElementById('loader').style.display = 'none';
+                
+                if (data.success) {
+                    // Display the results
+                    document.getElementById('emotionResult').textContent = data.emotion;
+                    
+                    // Display probability bars
+                    const probsDiv = document.getElementById('probabilitiesResult');
+                    probsDiv.innerHTML = '';
+                    
+                    Object.entries(data.probabilities).forEach(([emotion, probability]) => {
+                        const percentage = Math.round(probability * 100);
+                        const color = emotion === data.emotion ? '#336699' : '#adb5bd';
+                        
+                        const container = document.createElement('div');
+                        container.className = 'progress-container';
+                        
+                        const label = document.createElement('span');
+                        label.className = 'emotion-label';
+                        label.textContent = emotion + ':';
+                        
+                        const progressBar = document.createElement('div');
+                        progressBar.className = 'progress-bar';
+                        
+                        const progressFill = document.createElement('div');
+                        progressFill.className = 'progress-fill';
+                        progressFill.style.width = percentage + '%';
+                        progressFill.style.backgroundColor = color;
+                        progressFill.textContent = percentage + '%';
+                        
+                        progressBar.appendChild(progressFill);
+                        container.appendChild(label);
+                        container.appendChild(progressBar);
+                        
+                        probsDiv.appendChild(container);
+                    });
+                    
+                    // Show result container
+                    document.getElementById('resultContainer').style.display = 'block';
+                } else {
+                    // Display error
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                // Hide loader
+                document.getElementById('loader').style.display = 'none';
+                alert('An error occurred: ' + error);
+            });
+        });
+    </script>
+</body>
+</html>
