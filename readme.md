@@ -127,7 +127,7 @@ The system consists of three main components:
 
 1. Clone the repository:
 ```
-git clone https://github.com/yourusername/emotion-tracker.git
+git clone https://github.com/thakshana02/emotion_tracker.git
 cd emotion-tracker
 ```
 
